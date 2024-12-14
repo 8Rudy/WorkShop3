@@ -42,36 +42,76 @@ https://docs.google.com/spreadsheets/d/12V0QD20hEG96FhofnroFfmMycMuCZ-Wvk7E-xRa7
 
 
 ## Задание 3
-### Какова роль параметра Lr? Ответьте на вопрос, приведите пример выполнения кода, который подтверждает ваш ответ. В качестве эксперимента можете изменить значение параметра.
-
-- Перечисленные в этом туториале действия могут быть выполнены запуском на исполнение скрипт-файла, доступного [в репозитории](https://github.com/Den1sovDm1triy/hfss-scripting/blob/main/ScreatingSphereInAEDT.py).
-- Для запуска скрипт-файла откройте Ansys Electronics Desktop. Перейдите во вкладку [Automation] - [Run Script] - [Выберите файл с именем ScreatingSphereInAEDT.py из репозитория].
-
+### визуализировать данные из google-таблицы с помощью Python 
 ```py
+import numpy as np
+import matplotlib.pyplot as plt
+import random as rnd
 
-import ScriptEnv
-ScriptEnv.Initialize("Ansoft.ElectronicsDesktop")
-oDesktop.RestoreWindow()
-oProject = oDesktop.NewProject()
-oProject.Rename("C:/Users/denisov.dv/Documents/Ansoft/SphereDIffraction.aedt", True)
-oProject.InsertDesign("HFSS", "HFSSDesign1", "HFSS Terminal Network", "")
-oDesign = oProject.SetActiveDesign("HFSSDesign1")
-oEditor = oDesign.SetActiveEditor("3D Modeler")
-oEditor.CreateSphere(
-	[
-		"NAME:SphereParameters",
-		"XCenter:="		, "0mm",
-		"YCenter:="		, "0mm",
-		"ZCenter:="		, "0mm",
-		"Radius:="		, "1.0770329614269mm"
-	], 
-)
+def simulate_shots(weapon_name, num_shots, damage_per_shot, hit_probabilities, ax):
+    # Генерация случайных выстрелов с отклонениями
+    np.random.seed(rnd.randint(32, 64))
+    shots_coords = np.random.normal(loc=0, scale=5, size=(num_shots, 2))
+
+    # Вычисляем отклонения (расстояния от центра цели)
+    distances = np.linalg.norm(shots_coords, axis=1)
+
+    # Проверяем попадания
+    hits, misses = [], []
+    for i, distance in enumerate(distances):
+        distance_index = min(int(distance), len(hit_probabilities) - 1)
+        hit_chance = hit_probabilities[distance_index] / 100
+        if np.random.rand() < hit_chance:
+            hits.append(shots_coords[i])
+        else:
+            misses.append(shots_coords[i])
+
+    hits = np.array(hits)
+    misses = np.array(misses)
+
+    # Выводим результаты
+    print(f"{weapon_name}: {len(hits)} попаданий из {num_shots}")
+    print(f"СКО отклонений: {np.std(distances):.2f} пикселей")
+
+    # Визуализация
+    if len(hits) > 0:
+        ax.scatter(hits[:, 0], hits[:, 1], color='green', label='Попадания')
+    if len(misses) > 0:
+        ax.scatter(misses[:, 0], misses[:, 1], color='red', label='Промахи')
+    ax.scatter(0, 0, color='blue', s=100, label='Цель')
+    ax.set_xlim(-20, 20)
+    ax.set_ylim(-20, 20)
+    ax.axhline(0, color='black', lw=0.5)
+    ax.axvline(0, color='black', lw=0.5)
+    ax.set_title(f"{weapon_name}\nУрон за выстрел: {damage_per_shot}")
+    ax.legend()
+    ax.set_aspect('equal', adjustable='box')
+
+# Параметры для различных оружий
+weapons = [
+    ("Копье", 10, 4, [100.00, 83.33, 83.33, 66.67, 66.67, 50.50, 33.33, 33.33, 00.00]),
+    ("Лук", 50, 4, [16.67, 33.33, 33.33, 66.67, 66.67, 66.67, 66.67, 66.67, 83.33, 83.33]),
+    ("Огнемет", 20, 4, [83.33, 66.67, 50.00, 50.00, 33.33, 16.67, 16.67]),
+    ("Миномет", 15, 8, [16.67, 16.67, 33.33, 33.33, 33.33, 50.00, 66.67, 50.00, 83.33, 100.00, 100.00]),
+    ("Арбалет", 30, 3, [66.67, 66.67, 66.67, 50.00, 50.00, 50.00, 33.33, 33.33])
+]
+
+# Создаем фигуру и подграфики
+fig, axs = plt.subplots(2, 2, figsize=(12, 12))
+axs = axs.flatten()  # Преобразуем 2D массив в 1D для простоты использования
+
+# Запускаем симуляцию для каждого оружия
+for i, weapon in enumerate(weapons):
+    simulate_shots(*weapon, axs[i])
+
+plt.tight_layout()  # Упаковываем подграфики
+plt.show()
 
 ```
 
 ## Выводы
 
-Абзац умных слов о том, что было сделано и что было узнано.
+Я научилась работать с балансом, эта практика была одной из самых интересныхдля меня, так как пришлось продумывать какие параметры надо задать оружию, что бы оно соответствовало описанию и при этом находилось в разумных рамках 
 
 | Plugin | README |
 | ------ | ------ |
